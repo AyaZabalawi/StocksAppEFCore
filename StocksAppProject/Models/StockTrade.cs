@@ -1,5 +1,8 @@
-﻿namespace StocksAppProject.Models
+﻿namespace StockMarketSolution.Models
 {
+    /// <summary>
+    /// Represents the model class to supply trade details (stock id, stock name, price and quantity etc.) to the Trade/Index view
+    /// </summary>
     public class StockTrade
     {
         public string? StockSymbol { get; set; }
@@ -8,13 +11,3 @@
         public uint Quantity { get; set; } = 0;
     }
 }
-
-/*
- *
-    This model class will be used to send model object from controller to the "Trade/Index" view.
-    It contains the following properties:
-    string? StockSymbol
-    string? StockName
-    double Price
-    unit Quantity
- */

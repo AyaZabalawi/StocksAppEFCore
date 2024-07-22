@@ -1,58 +1,97 @@
-﻿using ServiceContracts;
+﻿using Entities;
+using Microsoft.EntityFrameworkCore;
+using ServiceContracts;
 using ServiceContracts.DTO;
 using Services.Helpers;
 using System;
-using Entities;
+using System.Diagnostics;
+using System.Net.Http;
+using System.Text.Json;
 
 namespace Services
 {
     public class StocksService : IStockService
     {
-        private readonly List<BuyOrder> _buyOrders;
-        private readonly List<SellOrder> _sellOrders;
+        //private field
+        private readonly StockMarketDbContext _db;
 
-        public StocksService()
+
+        /// <summary>
+        /// Constructor of StocksService class that executes when a new object is created for the class
+        /// </summary>
+        public StocksService(StockMarketDbContext stockMarketDbContext)
         {
-            _buyOrders = new List<BuyOrder>();
-            _sellOrders = new List<SellOrder>();
+            _db = stockMarketDbContext;
         }
 
-        // CreateBuyOrder: Inserts a new buy order into the database table called 'BuyOrders'
-        public BuyOrderResponse CreateBuyOrder(BuyOrderRequest? buyOrderRequest)
-        {
-            if (buyOrderRequest == null) throw new ArgumentNullException(nameof(buyOrderRequest));
-            ValidationHelper.ModelValidation(buyOrderRequest);
-            BuyOrder buyOrder = buyOrderRequest.ToBuyOrder();
-            buyOrder.BuyOrderID = Guid.NewGuid();
-            _buyOrders.Add(buyOrder);
 
+        public async Task<BuyOrderResponse> CreateBuyOrder(BuyOrderRequest? buyOrderRequest)
+        {
+            //Validation: buyOrderRequest can't be null
+            if (buyOrderRequest == null)
+                throw new ArgumentNullException(nameof(buyOrderRequest));
+
+            //Model validation
+            ValidationHelper.ModelValidation(buyOrderRequest);
+
+            //convert buyOrderRequest into BuyOrder type
+            BuyOrder buyOrder = buyOrderRequest.ToBuyOrder();
+
+            //generate BuyOrderID
+            buyOrder.BuyOrderID = Guid.NewGuid();
+
+            //add buy order object to buy orders list
+            _db.BuyOrders.Add(buyOrder);
+            await _db.SaveChangesAsync();
+
+            //convert the BuyOrder object into BuyOrderResponse type
             return buyOrder.ToBuyOrderResponse();
         }
 
-        // CreateSellOrder: Inserts a new sell order into the database table called 'SellOrders'
-        public SellOrderResponse CreateSellOrder(SellOrderRequest? sellOrderRequest)
-        {
-            if (sellOrderRequest == null) throw new ArgumentNullException(nameof(sellOrderRequest));
-            ValidationHelper.ModelValidation(sellOrderRequest);
-            SellOrder sellOrder = sellOrderRequest.ToSellOrder();
-            sellOrder.SellOrderID = Guid.NewGuid();
-            _sellOrders.Add(sellOrder);
 
+        public async Task<SellOrderResponse> CreateSellOrder(SellOrderRequest? sellOrderRequest)
+        {
+            //Validation: sellOrderRequest can't be null
+            if (sellOrderRequest == null)
+                throw new ArgumentNullException(nameof(sellOrderRequest));
+
+            //Model validation
+            ValidationHelper.ModelValidation(sellOrderRequest);
+
+            //convert sellOrderRequest into SellOrder type
+            SellOrder sellOrder = sellOrderRequest.ToSellOrder();
+
+            //generate SellOrderID
+            sellOrder.SellOrderID = Guid.NewGuid();
+
+            //add sell order object to sell orders list
+            _db.SellOrders.Add(sellOrder);
+            await _db.SaveChangesAsync();
+
+            //convert the SellOrder object into SellOrderResponse type
             return sellOrder.ToSellOrderResponse();
         }
 
-        // GetBuyOrders: Returns the existing list of buy orders retrieved from database table called 'BuyOrders' in the order of latest->oldest
-        public List<BuyOrderResponse> GetBuyOrders()
+
+        public async Task<List<BuyOrderResponse>> GetBuyOrders()
         {
-            return _buyOrders.OrderByDescending(temp => temp.DateAndTimeOfOrder).Select(temp => temp.ToBuyOrderResponse()).ToList();
+            //Convert all BuyOrder objects into BuyOrderResponse objects
+            List<BuyOrder> buyOrders = await _db.BuyOrders
+             .OrderByDescending(temp => temp.DateAndTimeOfOrder)
+             .ToListAsync();
+
+            return buyOrders.Select(temp => temp.ToBuyOrderResponse()).ToList();
         }
 
-        // GetSellOrders: Returns the existing list of sell orders retrieved from database table called 'SellOrders' in the order of latest->oldest
-        public List<SellOrderResponse> GetSellOrders()
+
+        public async Task<List<SellOrderResponse>> GetSellOrders()
         {
-            return _sellOrders.OrderByDescending(temp => temp.DateAndTimeOfOrder).Select(temp => temp.ToSellOrderResponse()).ToList();
+            //Convert all SellOrder objects into SellOrderResponse objects
+            List<SellOrder> sellOrders = await _db.SellOrders
+             .OrderByDescending(temp => temp.DateAndTimeOfOrder)
+             .ToListAsync();
+
+            return sellOrders.Select(temp => temp.ToSellOrderResponse()).ToList();
         }
     }
 }
-
-
